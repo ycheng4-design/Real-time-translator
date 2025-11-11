@@ -1,65 +1,113 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { RecorderControls } from "../components/RecorderControls";
-import { SettingsPanel } from "../components/SettingsPanel";
-import { TranscriptArea } from "../components/TranscriptArea";
-
-const MOCK_TRANSCRIPT_SEGMENTS = [
-  "Initializing microphone and preparing to transcribe...",
-  "Hello everyone, welcome to the Accessible Real-Time Translator demo.",
-  "This mock transcript shows how your audio will appear in real time.",
-  "In future iterations we will stream real audio data from the backend."
-];
+import { useState } from "react";
+import RecorderControls from "@/components/RecorderControls";
+import TranscriptArea from "@/components/TranscriptArea";
+import SettingsPanel from "@/components/SettingsPanel";
 
 export default function HomePage() {
   const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState("English");
-  const [audioFirst, setAudioFirst] = useState(true);
-  const [transcriptIndex, setTranscriptIndex] = useState(0);
-
-  const transcript = useMemo(() => MOCK_TRANSCRIPT_SEGMENTS[transcriptIndex], [transcriptIndex]);
+  const [audioFirst, setAudioFirst] = useState(false);
+  const [translatedText, setTranslatedText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleToggleRecording = () => {
+    // TODO: integrate real audio recording + ASR
     setIsRecording((prev) => !prev);
-    setTranscriptIndex((prev) => (prev + 1) % MOCK_TRANSCRIPT_SEGMENTS.length);
+  };
 
-    // TODO: Integrate with Web Speech API / backend streaming service.
+  // Keep your mock for now so you can see UI move
+  const handleMockAppend = () => {
+    setTranscript((prev) =>
+      prev
+        ? prev + "\n[Demo] New recognized speech segment..."
+        : "[Demo] Listening... recognized speech will appear here."
+    );
+  };
+
+  const handleTranslate = async () => {
+    setLoading(true);
+    setErrorMsg("");
+    setTranslatedText("");
+
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: transcript,
+          targetLanguage: preferredLanguage,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed");
+      }
+
+      setTranslatedText(data.translated || "");
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Translation failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-16">
-      <div className="flex w-full max-w-5xl flex-col gap-10 rounded-2xl bg-white p-8 shadow-xl ring-1 ring-slate-100 md:p-12">
-        <header className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+    <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center py-10">
+      <div className="w-full max-w-3xl px-4">
+        <header className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight">
             Accessible Real-Time Translator
           </h1>
-          <p className="mt-3 text-base text-slate-600 sm:text-lg">
-            Real-time speech transcription with accessibility-first controls.
+          <p className="text-sm text-slate-400 mt-2">
+            Prototype interface for language-aware, accessibility-first live translation.
           </p>
         </header>
 
-        <section className="flex flex-col gap-8 lg:flex-row">
-          <div className="flex flex-1 flex-col gap-6">
-            <RecorderControls isRecording={isRecording} onToggleRecording={handleToggleRecording} />
-            <TranscriptArea transcript={transcript} />
-          </div>
+        <section className="space-y-5">
+          <RecorderControls
+            isRecording={isRecording}
+            onToggleRecording={handleToggleRecording}
+            onMockAppend={handleMockAppend}
+          />
 
-          <div className="flex flex-col gap-6">
-            <SettingsPanel
-              preferredLanguage={preferredLanguage}
-              onPreferredLanguageChange={setPreferredLanguage}
-              audioFirst={audioFirst}
-              onAudioFirstChange={setAudioFirst}
-            />
-            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-700">Session summary</p>
-              <ul className="mt-2 space-y-1">
-                <li>Preferred language: {preferredLanguage}</li>
-                <li>Audio-first: {audioFirst ? "On" : "Off"}</li>
-              </ul>
+          <TranscriptArea transcript={transcript} />
+
+          <button
+            onClick={handleTranslate}
+            disabled={loading || !transcript}
+            className="mt-2 px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-xs font-medium disabled:opacity-40"
+          >
+            {loading ? "Translating..." : "Translate Transcript"}
+          </button>
+
+          {errorMsg && (
+            <p className="text-xs text-red-400 mt-1">{errorMsg}</p>
+          )}
+
+          {translatedText && (
+            <div className="mt-3">
+              <h2 className="text-sm font-medium text-slate-200 mb-1">
+                Translated Output
+              </h2>
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs whitespace-pre-wrap">
+                {translatedText}
+              </div>
             </div>
-          </div>
+          )}
+
+          <SettingsPanel
+            preferredLanguage={preferredLanguage}
+            onPreferredLanguageChange={setPreferredLanguage}
+            audioFirst={audioFirst}
+            onAudioFirstChange={setAudioFirst}
+          />
         </section>
       </div>
     </main>
