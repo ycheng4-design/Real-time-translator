@@ -1,16 +1,22 @@
 "use client";
 
-type TranscriptAreaProps = {
+type Props = {
   transcript: string;
 };
 
-export function TranscriptArea({ transcript }: TranscriptAreaProps) {
+export default function TranscriptArea({ transcript }: Props) {
   return (
-    <section className="flex-1">
-      <h2 className="mb-3 text-lg font-semibold text-slate-800">Transcript</h2>
-      <div className="h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-inner">
-        {transcript || <span className="text-slate-400">Waiting for speech input...</span>}
+    <div className="mt-4">
+      <h2 className="text-sm font-medium text-slate-200 mb-2">
+        Live Transcript
+      </h2>
+      <div className="h-40 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs overflow-y-auto whitespace-pre-wrap">
+        {transcript || (
+          <span className="text-slate-500">
+            Your recognized speech will appear here.
+          </span>
+        )}
       </div>
-    </section>
+    </div>
   );
 }
