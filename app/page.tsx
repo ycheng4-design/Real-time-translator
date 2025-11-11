@@ -6,7 +6,6 @@ import TranscriptArea from "@/components/TranscriptArea";
 import SettingsPanel from "@/components/SettingsPanel";
 
 export default function HomePage() {
-  const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState("English");
   const [audioFirst, setAudioFirst] = useState(false);
@@ -14,21 +13,13 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleToggleRecording = () => {
-    // TODO: integrate real audio recording + ASR
-    setIsRecording((prev) => !prev);
-  };
-
-  // Keep your mock for now so you can see UI move
-  const handleMockAppend = () => {
-    setTranscript((prev) =>
-      prev
-        ? prev + "\n[Demo] New recognized speech segment..."
-        : "[Demo] Listening... recognized speech will appear here."
-    );
+  const handleAppendTranscript = (text: string) => {
+    setTranscript((prev) => (prev ? prev + "\n" + text : text));
   };
 
   const handleTranslate = async () => {
+    if (!transcript) return;
+
     setLoading(true);
     setErrorMsg("");
     setTranslatedText("");
@@ -46,7 +37,7 @@ export default function HomePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Request failed");
+        throw new Error(data.error || "Translation failed");
       }
 
       setTranslatedText(data.translated || "");
@@ -71,11 +62,7 @@ export default function HomePage() {
         </header>
 
         <section className="space-y-5">
-          <RecorderControls
-            isRecording={isRecording}
-            onToggleRecording={handleToggleRecording}
-            onMockAppend={handleMockAppend}
-          />
+          <RecorderControls onTranscript={handleAppendTranscript} />
 
           <TranscriptArea transcript={transcript} />
 
@@ -108,6 +95,11 @@ export default function HomePage() {
             audioFirst={audioFirst}
             onAudioFirstChange={setAudioFirst}
           />
+
+          <div className="mt-3 text-xs text-slate-500">
+            <p>Preferred language: {preferredLanguage}</p>
+            <p>Audio-first mode: {audioFirst ? "On" : "Off"}</p>
+          </div>
         </section>
       </div>
     </main>
