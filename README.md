@@ -11,4 +11,4 @@ accessible-realtime-translator/
 ├── tsconfig.json
 ├── tailwind.config.ts
 ├── postcss.config.mjs
-└── next.config.mjs
+└── next.config.js
